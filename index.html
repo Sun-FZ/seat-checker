@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>图书馆座位实时监控 - 终极修复版</title>
+    <title>图书馆座位实时监控</title>
     <style>
         body { margin: 0; display: flex; justify-content: center; align-items: center; height: 100vh; color: white; font-family: sans-serif; background-color: #000; overflow: hidden; }
         .bg-gif { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; object-fit: cover; z-index: -1; opacity: 0.5; pointer-events: none; }
@@ -13,6 +13,7 @@
         .available { background: rgba(46, 204, 113, 0.75); }
         .occupied { background: rgba(231, 76, 60, 0.75); }
         #update-time { font-size: 0.75rem; opacity: 0.6; margin-top: 20px; }
+        #proxy-btn { display: none; margin-top: 15px; padding: 10px; background: #f39c12; color: white; text-decoration: none; border-radius: 5px; font-size: 0.7rem; }
     </style>
 </head>
 <body>
@@ -26,69 +27,77 @@
             <div id="seat3" class="seat available">3号位: --</div>
             <div id="seat4" class="seat available">4号位: --</div>
         </div>
-        <p id="update-time">正在初始化 OneNET 握手...</p>
+        <p id="update-time">初始化连接...</p>
+        <a id="proxy-btn" href="https://cors-anywhere.herokuapp.com/corsdemo" target="_blank">点此激活云端访问权限</a>
     </div>
 
     <script>
-        const CONFIG = {
-            // 使用你提供的有效期至2028年的 Token
+        const ONENET = {
             token: "version=2018-10-31&res=products%2F3dG9zsAlWf%2Fdevices%2Ftest&et=1835337893&method=md5&sign=SRFj1BaCxpJRUXMkTTXRFQ%3D%3D",
-            productID: "3dG9zsAlWf",
-            deviceName: "test",
-            identifier: "seats" // 物模型标识符
+            pid: "3dG9zsAlWf",
+            dev: "test",
+            id: "seats"
         };
 
-        async function fetchSeatStatus() {
-            // 接口地址：必须对应 Studio 物模型查询属性接口
-            const url = `https://iot-api.heclouds.com/thingmodel/query-device-property`;
+        async function fetchSeatData() {
+            // 使用 CORS 代理
+            const proxy = "https://cors-anywhere.herokuapp.com/";
+            const api = "https://iot-api.heclouds.com/thingmodel/query-device-property";
             
             try {
-                const response = await fetch(url, {
-                    method: 'POST', // 规范要求必须为 POST
+                const response = await fetch(proxy + api, {
+                    method: 'POST', // 必须使用 POST
                     headers: {
-                        "authorization": CONFIG.token,
-                        "Content-Type": "application/json"
+                        "authorization": ONENET.token,
+                        "Content-Type": "application/json",
+                        "x-requested-with": "XMLHttpRequest"
                     },
-                    // 参数必须放在 JSON Body 中
                     body: JSON.stringify({
-                        product_id: CONFIG.productID,
-                        device_name: CONFIG.deviceName
+                        product_id: ONENET.pid,
+                        device_name: ONENET.dev
                     })
                 });
 
-                const result = await response.json();
+                if (response.status === 403) {
+                    document.getElementById('update-time').innerText = "提示：权限未激活";
+                    document.getElementById('proxy-btn').style.display = 'inline-block';
+                    return;
+                }
 
-                if (result.code === 0 && result.data) {
-                    // 查找 seats 属性
-                    const prop = result.data.find(item => item.identifier === CONFIG.identifier);
-                    if (prop && prop.value !== undefined) {
-                        updateUI(String(prop.value).padStart(4, '0'));
+                const res = await response.json();
+
+                if (res.code === 0 && res.data) {
+                    const prop = res.data.find(item => item.identifier === ONENET.id);
+                    if (prop) {
+                        // 逻辑：解析字符串并更新 UI
+                        const status = String(prop.value).padStart(4, '0');
+                        updateUI(status);
+                        document.getElementById('proxy-btn').style.display = 'none';
                     }
                 } else {
-                    document.getElementById('update-time').innerText = "OneNET: " + (result.msg || result.code);
+                    document.getElementById('update-time').innerText = "OneNET: " + (res.msg || "认证失败");
                 }
             } catch (error) {
-                // 常见的 CORS 跨域错误捕获
-                document.getElementById('update-time').innerText = "连接失败：检查跨域或 Token";
+                document.getElementById('update-time').innerText = "连接失败，请检查网络或激活代理";
             }
         }
 
-        function updateUI(statusStr) {
+        function updateUI(s) {
             for (let i = 0; i < 4; i++) {
-                const seat = document.getElementById(`seat${i+1}`);
-                if (statusStr[i] === '1') {
-                    seat.className = 'seat occupied';
-                    seat.innerText = `${i+1}号位: 有人`;
+                const el = document.getElementById(`seat${i+1}`);
+                if (s[i] === '1') {
+                    el.className = 'seat occupied';
+                    el.innerText = `${i+1}号位: 有人`;
                 } else {
-                    seat.className = 'seat available';
-                    seat.innerText = `${i+1}号位: 空闲`;
+                    el.className = 'seat available';
+                    el.innerText = `${i+1}号位: 空闲`;
                 }
             }
-            document.getElementById('update-time').innerText = "最后更新: " + new Date().toLocaleTimeString();
+            document.getElementById('update-time').innerText = "最后同步: " + new Date().toLocaleTimeString();
         }
 
-        fetchSeatStatus();
-        setInterval(fetchSeatStatus, 5000); // 5秒轮询
+        fetchSeatData();
+        setInterval(fetchSeatData, 5000);
     </script>
 </body>
 </html>
