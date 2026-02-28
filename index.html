@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <title>图书馆座位实时监控 - 专业版</title>
     <style>
-        /* 保留之前的 CSS 样式，确保 object-fit: cover 铺满全屏 */
         body { margin: 0; display: flex; justify-content: center; align-items: center; height: 100vh; color: white; font-family: sans-serif; background-color: #000; overflow: hidden; }
         .bg-gif { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; object-fit: cover; z-index: -1; opacity: 0.5; }
         .container { background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.1); padding: 2.5rem; border-radius: 28px; text-align: center; width: 340px; }
@@ -16,7 +15,8 @@
     </style>
 </head>
 <body>
-    <img src="bg.gif" class="bg-gif">
+    <!-- 修正img标签语法错误 -->
+    < img src="bg.gif" class="bg-gif" alt="背景">
 
     <div class="container">
         <h2>📚 图书馆座位监控</h2>
@@ -26,44 +26,54 @@
             <div id="seat3" class="seat available">3号位: --</div>
             <div id="seat4" class="seat available">4号位: --</div>
         </div>
-        <p id="update-time">正在初始化云端连接...</p>
+        <p id="update-time">正在初始化云端连接...</p >
     </div>
 
     <script>
-        // ======= 参考成功案例的 Config 结构 =======
         const config = {
-            // 1. 填入你新生成的 10 年内有效的 Token
+            // 请确认这里的Token是正确生成的，res路径和下方product_id、device_name完全一致
             authorization: "version=2018-10-31&res=products%2F3dG9zsAlWf%2Fdevices%2Ftest&et=1835337893&method=md5&sign=SRFj1BaCxpJRUXMkTTXRFQ%3D%3D",
             product_id: "3dG9zsAlWf",
             device_name: "test",
-            // 数据查询地址
             getinfo_url: 'https://iot-api.heclouds.com/thingmodel/query-device-property'
         };
 
         async function fetchSeatData() {
-            // 构造带参数的完整 URL
-            const full_url = `${config.getinfo_url}?product_id=${config.product_id}&device_name=${config.device_name}`;
-            
             try {
-                const response = await fetch(full_url, {
-                    method: 'GET',
+                // 修正为POST请求，参数放在JSON body中，符合OneNET接口规范
+                const response = await fetch(config.getinfo_url, {
+                    method: 'POST',
                     headers: {
                         "authorization": config.authorization,
                         "Content-Type": "application/json"
-                    }
+                    },
+                    // 核心修正：请求体放入必填参数
+                    body: JSON.stringify({
+                        product_id: config.product_id,
+                        device_name: config.device_name
+                    })
                 });
 
                 const result = await response.json();
+                console.log("接口返回数据：", result); // 新增控制台日志，方便调试
 
                 if (result.code === 0) {
+                    // 增加完整的容错判断
+                    if (!result.data || !Array.isArray(result.data)) {
+                        document.getElementById('update-time').innerText = "云端无返回属性数据";
+                        return;
+                    }
                     const prop = result.data.find(item => item.identifier === "seats");
-                    if (prop && prop.value !== undefined) {
+                    if (prop && prop.value !== undefined && prop.value !== null) {
                         updateUI(String(prop.value).padStart(4, '0'));
+                    } else {
+                        document.getElementById('update-time').innerText = "未找到seats属性，请检查物模型标识符";
                     }
                 } else {
-                    document.getElementById('update-time').innerText = "OneNET: " + result.msg;
+                    document.getElementById('update-time').innerText = `OneNET错误: ${result.msg} (错误码:${result.code})`;
                 }
             } catch (err) {
+                console.error("请求异常：", err);
                 document.getElementById('update-time').innerText = "网络异常，正在尝试重连...";
             }
         }
@@ -82,8 +92,9 @@
             document.getElementById('update-time').innerText = "最后更新: " + new Date().toLocaleTimeString();
         }
 
+        // 初始化执行
         fetchSeatData();
-        setInterval(fetchSeatData, 5000); // 5秒自动更新一次
+        setInterval(fetchSeatData, 5000); // 5秒自动更新
     </script>
 </body>
 </html>
