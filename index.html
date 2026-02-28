@@ -7,13 +7,12 @@
     <style>
         body { margin: 0; display: flex; justify-content: center; align-items: center; height: 100vh; color: white; font-family: sans-serif; background-color: #000; overflow: hidden; }
         .bg-gif { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; object-fit: cover; z-index: -1; opacity: 0.5; pointer-events: none; }
-        .container { background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.1); padding: 2.5rem; border-radius: 28px; text-align: center; width: 340px; box-shadow: 0 12px 40px rgba(0,0,0,0.5); }
+        .container { background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.1); padding: 2.5rem; border-radius: 28px; text-align: center; width: 340px; }
         .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; margin-top: 20px; }
         .seat { padding: 22px; border-radius: 18px; font-weight: bold; transition: all 0.4s ease; border: 1px solid rgba(255, 255, 255, 0.1); }
         .available { background: rgba(46, 204, 113, 0.75); }
         .occupied { background: rgba(231, 76, 60, 0.75); }
         #update-time { font-size: 0.75rem; opacity: 0.6; margin-top: 20px; }
-        #proxy-btn { display: none; margin-top: 15px; padding: 10px; background: #f39c12; color: white; text-decoration: none; border-radius: 5px; font-size: 0.7rem; }
     </style>
 </head>
 <body>
@@ -27,77 +26,63 @@
             <div id="seat3" class="seat available">3号位: --</div>
             <div id="seat4" class="seat available">4号位: --</div>
         </div>
-        <p id="update-time">初始化连接...</p>
-        <a id="proxy-btn" href="https://cors-anywhere.herokuapp.com/corsdemo" target="_blank">点此激活云端访问权限</a>
+        <p id="update-time">正在通过代理读取数据...</p>
     </div>
 
     <script>
-        const ONENET = {
+        const CONFIG = {
+            // 已确认的产品ID和小写L
             token: "version=2018-10-31&res=products%2F3dG9zsAlWf%2Fdevices%2Ftest&et=1835337893&method=md5&sign=SRFj1BaCxpJRUXMkTTXRFQ%3D%3D",
-            pid: "3dG9zsAlWf",
-            dev: "test",
-            id: "seats"
+            productID: "3dG9zsAlWf",
+            deviceName: "test"
         };
 
-        async function fetchSeatData() {
-            // 使用 CORS 代理
+        async function fetchSeatStatus() {
+            // 修正：回归 GET 请求，并将参数拼接到 URL 后缀
             const proxy = "https://cors-anywhere.herokuapp.com/";
-            const api = "https://iot-api.heclouds.com/thingmodel/query-device-property";
+            const api = `https://iot-api.heclouds.com/thingmodel/query-device-property-status?product_id=${CONFIG.productID}&device_name=${CONFIG.deviceName}`;
             
             try {
                 const response = await fetch(proxy + api, {
-                    method: 'POST', // 必须使用 POST
+                    method: 'GET', // 切回 GET 解决 404 问题
                     headers: {
-                        "authorization": ONENET.token,
-                        "Content-Type": "application/json",
+                        "authorization": CONFIG.token,
                         "x-requested-with": "XMLHttpRequest"
-                    },
-                    body: JSON.stringify({
-                        product_id: ONENET.pid,
-                        device_name: ONENET.dev
-                    })
+                    }
                 });
 
-                if (response.status === 403) {
-                    document.getElementById('update-time').innerText = "提示：权限未激活";
-                    document.getElementById('proxy-btn').style.display = 'inline-block';
-                    return;
-                }
+                const result = await response.json();
 
-                const res = await response.json();
-
-                if (res.code === 0 && res.data) {
-                    const prop = res.data.find(item => item.identifier === ONENET.id);
-                    if (prop) {
-                        // 逻辑：解析字符串并更新 UI
-                        const status = String(prop.value).padStart(4, '0');
-                        updateUI(status);
-                        document.getElementById('proxy-btn').style.display = 'none';
+                if (result.code === 0 && result.data) {
+                    // 查找 seats 属性
+                    const prop = result.data.find(item => item.identifier === "seats");
+                    if (prop && prop.value !== undefined) {
+                        updateUI(String(prop.value).padStart(4, '0'));
                     }
                 } else {
-                    document.getElementById('update-time').innerText = "OneNET: " + (res.msg || "认证失败");
+                    document.getElementById('update-time').innerText = "OneNET: " + (result.msg || "数据未找到");
                 }
             } catch (error) {
-                document.getElementById('update-time').innerText = "连接失败，请检查网络或激活代理";
+                document.getElementById('update-time').innerText = "连接失败，请确认代理已激活";
             }
         }
 
-        function updateUI(s) {
+        function updateUI(statusStr) {
             for (let i = 0; i < 4; i++) {
-                const el = document.getElementById(`seat${i+1}`);
-                if (s[i] === '1') {
-                    el.className = 'seat occupied';
-                    el.innerText = `${i+1}号位: 有人`;
+                const seat = document.getElementById(`seat${i+1}`);
+                if (statusStr[i] === '1') {
+                    seat.className = 'seat occupied';
+                    seat.innerText = `${i+1}号位: 有人`;
                 } else {
-                    el.className = 'seat available';
-                    el.innerText = `${i+1}号位: 空闲`;
+                    seat.className = 'seat available';
+                    seat.innerText = `${i+1}号位: 空闲`;
                 }
             }
-            document.getElementById('update-time').innerText = "最后同步: " + new Date().toLocaleTimeString();
+            document.getElementById('update-time').innerText = "最后更新: " + new Date().toLocaleTimeString();
         }
 
-        fetchSeatData();
-        setInterval(fetchSeatData, 5000);
+        fetchSeatStatus();
+        setInterval(fetchSeatStatus, 5000); // 5秒自动同步一次
     </script>
 </body>
 </html>
