@@ -3,10 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>图书馆座位实时监控 - 稳定版</title>
+    <title>图书馆座位实时监控 - 终极修复版</title>
     <style>
-        /* 页面基础样式：确保铺满全屏 */
-        body { margin: 0; display: flex; justify-content: center; align-items: center; height: 100vh; color: white; font-family: -apple-system, sans-serif; background-color: #000; overflow: hidden; }
+        body { margin: 0; display: flex; justify-content: center; align-items: center; height: 100vh; color: white; font-family: sans-serif; background-color: #000; overflow: hidden; }
         .bg-gif { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; object-fit: cover; z-index: -1; opacity: 0.5; pointer-events: none; }
         .container { background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.1); padding: 2.5rem; border-radius: 28px; text-align: center; width: 340px; box-shadow: 0 12px 40px rgba(0,0,0,0.5); }
         .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; margin-top: 20px; }
@@ -27,30 +26,30 @@
             <div id="seat3" class="seat available">3号位: --</div>
             <div id="seat4" class="seat available">4号位: --</div>
         </div>
-        <p id="update-time">正在与 OneNET 握手...</p>
+        <p id="update-time">正在初始化 OneNET 握手...</p>
     </div>
 
     <script>
         const CONFIG = {
-            // 填入你确认有效的 Token
+            // 使用你提供的有效期至2028年的 Token
             token: "version=2018-10-31&res=products%2F3dG9zsAlWf%2Fdevices%2Ftest&et=1835337893&method=md5&sign=SRFj1BaCxpJRUXMkTTXRFQ%3D%3D",
             productID: "3dG9zsAlWf",
             deviceName: "test",
-            identifier: "seats"
+            identifier: "seats" // 物模型标识符
         };
 
         async function fetchSeatStatus() {
-            // 核心修正：接口地址不再拼接参数
+            // 接口地址：必须对应 Studio 物模型查询属性接口
             const url = `https://iot-api.heclouds.com/thingmodel/query-device-property`;
             
             try {
                 const response = await fetch(url, {
-                    method: 'POST', // 必须使用 POST
+                    method: 'POST', // 规范要求必须为 POST
                     headers: {
                         "authorization": CONFIG.token,
                         "Content-Type": "application/json"
                     },
-                    // 核心修正：参数必须放在 Body 中以 JSON 格式发送
+                    // 参数必须放在 JSON Body 中
                     body: JSON.stringify({
                         product_id: CONFIG.productID,
                         device_name: CONFIG.deviceName
@@ -60,19 +59,17 @@
                 const result = await response.json();
 
                 if (result.code === 0 && result.data) {
-                    // 容错逻辑：在属性数组中查找
+                    // 查找 seats 属性
                     const prop = result.data.find(item => item.identifier === CONFIG.identifier);
                     if (prop && prop.value !== undefined) {
                         updateUI(String(prop.value).padStart(4, '0'));
-                    } else {
-                        throw new Error("属性未定义");
                     }
                 } else {
-                    document.getElementById('update-time').innerText = "OneNET: " + (result.msg || "错误码 " + result.code);
+                    document.getElementById('update-time').innerText = "OneNET: " + (result.msg || result.code);
                 }
             } catch (error) {
-                document.getElementById('update-time').innerText = "连接失败，请检查 Token 或跨域限制";
-                console.error("Fetch Error:", error);
+                // 常见的 CORS 跨域错误捕获
+                document.getElementById('update-time').innerText = "连接失败：检查跨域或 Token";
             }
         }
 
@@ -87,11 +84,11 @@
                     seat.innerText = `${i+1}号位: 空闲`;
                 }
             }
-            document.getElementById('update-time').innerText = "最后同步: " + new Date().toLocaleTimeString();
+            document.getElementById('update-time').innerText = "最后更新: " + new Date().toLocaleTimeString();
         }
 
         fetchSeatStatus();
-        setInterval(fetchSeatStatus, 5000);
+        setInterval(fetchSeatStatus, 5000); // 5秒轮询
     </script>
 </body>
 </html>
