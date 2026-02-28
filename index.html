@@ -3,11 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>图书馆座位监控 - GitHub 直连版</title>
+    <title>图书馆座位实时监控 - 福州大学</title>
     <style>
-        body { margin: 0; display: flex; justify-content: center; align-items: center; height: 100vh; color: white; font-family: sans-serif; background-color: #000; overflow: hidden; }
+        body { margin: 0; display: flex; justify-content: center; align-items: center; height: 100vh; color: white; font-family: -apple-system, sans-serif; background-color: #000; overflow: hidden; }
+        /* 背景图：确保仓库根目录有 bg.gif */
         .bg-gif { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; object-fit: cover; z-index: -1; opacity: 0.5; }
-        .container { background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.1); padding: 2.5rem; border-radius: 28px; text-align: center; width: 340px; }
+        .container { background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.1); padding: 2.5rem; border-radius: 28px; text-align: center; width: 340px; box-shadow: 0 8px 32px rgba(0,0,0,0.3); }
         .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; margin-top: 20px; }
         .seat { padding: 22px; border-radius: 18px; font-weight: bold; transition: all 0.4s ease; border: 1px solid rgba(255, 255, 255, 0.1); }
         .available { background: rgba(46, 204, 113, 0.75); }
@@ -26,41 +27,48 @@
             <div id="seat3" class="seat available">3号位: --</div>
             <div id="seat4" class="seat available">4号位: --</div>
         </div>
-        <p id="update-time">正在通过代理连接 OneNET...</p>
+        <p id="update-time">正在同步云端数据...</p>
     </div>
 
     <script>
-        // 使用公开的 CORS 代理镜像来绕过 OneNET 的跨域限制
-        const PROXY_URL = "https://api.allorigins.win/raw?url=";
-        const ONENET_URL = "https://iot-api.heclouds.com/thingmodel/query-device-property";
+        // 使用 allorigins 代理绕过 OneNET 的 CORS 限制
+        const proxy = "https://api.allorigins.win/get?url=";
+        const targetUrl = "https://iot-api.heclouds.com/thingmodel/query-device-property";
+        
+        // 你的 OneNET 配置
+        const params = {
+            product_id: "3dG9zsAlWf",
+            device_name: "test"
+        };
+        const token = "version=2018-10-31&res=products%2F3dG9zsAlWf%2Fdevices%2Ftest&et=1835337893&method=md5&sign=SRFj1BaCxpJRUXMkTTXRFQ%3D%3D";
 
         async function fetchSeatStatus() {
             try {
-                const response = await fetch(PROXY_URL + encodeURIComponent(ONENET_URL), {
-                    method: 'POST',
-                    headers: {
-                        // 你的 2028 年有效 Token
-                        "Authorization": "version=2018-10-31&res=products%2F3dG9zsAlWf%2Fdevices%2Ftest&et=1835337893&method=md5&sign=SRFj1BaCxpJRUXMkTTXRFQ%3D%3D",
-                        "Content-Type": "application/json"
-                    },
-                    body: JSON.stringify({
-                        product_id: "3dG9zsAlWf",
-                        device_name: "test"
-                    })
-                });
+                // 使用 GET 方式通过代理请求，避开 Authorization 头的预检拦截
+                // 注意：这里将 POST 请求转化为代理服务器的抓取请求
+                const finalUrl = `${proxy}${encodeURIComponent(targetUrl)}&method=POST&headers=${encodeURIComponent(JSON.stringify({
+                    "Authorization": token,
+                    "Content-Type": "application/json"
+                }))}&body=${encodeURIComponent(JSON.stringify(params))}`;
 
-                const result = await response.json();
+                const response = await fetch(finalUrl);
+                const outerData = await response.json();
+                
+                // allorigins 会把结果放在 contents 字段里
+                const result = JSON.parse(outerData.contents);
 
                 if (result.code === 0 && result.data) {
+                    // 查找标识符为 seats 的属性
                     const prop = result.data.find(item => item.identifier === "seats");
                     if (prop && prop.value !== undefined) {
                         updateUI(String(prop.value).padStart(4, '0'));
                     }
                 } else {
-                    document.getElementById('update-time').innerText = "OneNET返回错误: " + (result.msg || "未知");
+                    document.getElementById('update-time').innerText = "提示: " + (result.msg || "接口响应异常");
                 }
             } catch (error) {
-                document.getElementById('update-time').innerText = "代理连接失败，正在重试...";
+                document.getElementById('update-time').innerText = "正在尝试连接...";
+                console.error(error);
             }
         }
 
@@ -78,7 +86,7 @@
             document.getElementById('update-time').innerText = "最后更新: " + new Date().toLocaleTimeString();
         }
 
-        // 每 5 秒刷新一次数据
+        // 每 5 秒刷新一次
         fetchSeatStatus();
         setInterval(fetchSeatStatus, 5000);
     </script>
