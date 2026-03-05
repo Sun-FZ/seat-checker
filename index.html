@@ -138,7 +138,7 @@
         @keyframes pulse-green {
             0% { box-shadow: 0 0 0 0px rgba(0, 184, 148, 0.4); }
             70% { box-shadow: 0 0 0 10px rgba(0, 184, 148, 0); }
-            100% { box-shadow: 0 0 0 0px rgba(0, 184, 148, 0); }
+            100% { box-shadow: 0 0 0 0px rgba(0, 184, 148, 0.4); }
         }
 
         .seat-label { font-weight: 600; font-size: 1rem; margin-bottom: 4px; }
@@ -261,7 +261,7 @@
                     <div class="seat-label" style="color:${isBusy ? 'var(--occupied)' : 'var(--available)'}">
                         ${isBusy ? '有人' : '空闲'}
                     </div>
-                    <div class="seat-id">位置 ID: B${i+1}</div>
+                    <div class="seat-id">位置 ID: ${i+1}</div>
                 `;
                 grid.appendChild(card);
             });
