@@ -3,178 +3,155 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>福大铜盘智慧自习室</title>
+    <title>福大铜盘自习室 - 智慧监控</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
-            --fzu-red: #A6192E;
+            --fzu-red: #A6192E; /* 官方标准福大红 */
             --fzu-gold: #C6A300;
-            --available: #00d2be;
-            --occupied: #ff5e57;
-            --glass: rgba(255, 255, 255, 0.82);
+            --bg-blur: rgba(255, 255, 255, 0.75);
+            --available: #00b894;
+            --occupied: #d63031;
+            --text-main: #2d3436;
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; }
 
         body, html {
             height: 100%;
-            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-            background: #000;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            overflow: hidden;
+            font-family: 'SF Pro Display', 'PingFang SC', sans-serif;
+            background-color: #f0f2f5;
         }
 
-        /* 背景优化：增加渐变遮罩 */
+        /* 响应式自适应背景 */
         .bg-layer {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
             z-index: -1;
             background-size: cover;
             background-position: center;
-            transition: 1s;
+            transition: 1s ease;
         }
-        @media (min-width: 769px) { .bg-layer { background-image: linear-gradient(rgba(0,0,0,0.1), rgba(0,0,0,0.1)), url('bg-pc.jpg'); } }
-        @media (max-width: 768px) { .bg-layer { background-image: linear-gradient(rgba(0,0,0,0.2), rgba(0,0,0,0.2)), url('bg-mobile.jpg'); } }
+        /* 这里的 URL 请确保在你的 GitHub 仓库中有对应文件 */
+        @media (min-width: 769px) { .bg-layer { background-image: linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.3)), url('bg-pc.jpg'); } }
+        @media (max-width: 768px) { .bg-layer { background-image: linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.4)), url('bg-mobile.jpg'); } }
 
-        /* 主容器：响应式宽度 */
-        .main-card {
-            width: 92%;
-            max-width: 550px; /* 电脑端稍微放宽 */
-            background: var(--glass);
-            backdrop-filter: blur(25px);
-            -webkit-backdrop-filter: blur(25px);
-            border-radius: 40px;
-            border: 1.5px solid rgba(255, 255, 255, 0.5);
-            box-shadow: 0 30px 60px rgba(0,0,0,0.25);
-            padding: 40px 30px;
-            text-align: center;
-            animation: slideUp 0.8s cubic-bezier(0.2, 0.8, 0.2, 1);
-        }
-
-        @keyframes slideUp {
-            from { opacity: 0; transform: translateY(30px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .header h1 {
-            color: var(--fzu-red);
-            font-size: 1.8rem;
-            font-weight: 800;
-            letter-spacing: 2px;
-            margin-bottom: 5px;
-        }
-
-        .header .sub-info {
-            font-size: 0.8rem;
-            color: #777;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-bottom: 30px;
-        }
-
-        /* 环形进度条区域 */
-        .usage-section {
+        .app-container {
             display: flex;
-            align-items: center;
             justify-content: center;
-            gap: 30px;
-            margin-bottom: 35px;
-            background: rgba(255,255,255,0.4);
+            align-items: center;
+            min-height: 100vh;
             padding: 20px;
-            border-radius: 25px;
         }
 
-        .chart-container {
-            position: relative;
-            width: 80px; height: 80px;
+        .main-card {
+            width: 100%;
+            max-width: 480px;
+            background: var(--bg-blur);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 32px;
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+            padding: 30px;
+            overflow: hidden;
         }
 
-        .chart-text {
-            position: absolute;
-            top: 50%; left: 50%;
-            transform: translate(-50%, -50%);
-            font-weight: bold;
-            font-size: 1.1rem;
-            color: var(--fzu-red);
+        /* 顶部标题栏 */
+        .header { text-align: center; margin-bottom: 25px; }
+        .header img { width: 50px; margin-bottom: 10px; } /* 如果你有校徽可以加在这里 */
+        .header h1 { 
+            font-size: 1.6rem; 
+            color: var(--fzu-red); 
+            font-weight: 800;
+            letter-spacing: 1px;
         }
+        .header .subtitle { font-size: 0.85rem; color: #636e72; margin-top: 4px; }
 
-        .stats-text-box { text-align: left; }
-        .stat-line { font-size: 0.9rem; font-weight: 600; margin: 4px 0; display: flex; align-items: center; }
-        .dot { width: 8px; height: 8px; border-radius: 50%; margin-right: 8px; }
+        /* 统计数字 */
+        .stat-banner {
+            display: flex;
+            justify-content: space-around;
+            background: rgba(255, 255, 255, 0.5);
+            padding: 15px;
+            border-radius: 20px;
+            margin-bottom: 25px;
+        }
+        .stat-item { text-align: center; }
+        .stat-val { display: block; font-size: 1.2rem; font-weight: bold; color: var(--text-main); }
+        .stat-label { font-size: 0.7rem; color: #888; text-transform: uppercase; }
 
-        /* 座位网格优化 */
-        .grid {
+        /* 座位区域布局 */
+        .seats-grid {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
             gap: 20px;
         }
 
-        .seat-pod {
-            background: linear-gradient(145deg, #ffffff, #f0f0f0);
-            border-radius: 28px;
-            padding: 25px 15px;
-            box-shadow: 7px 7px 15px rgba(0,0,0,0.05), -5px -5px 15px rgba(255,255,255,0.8);
-            border: 1px solid rgba(255,255,255,0.6);
-            transition: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        .seat-unit {
             position: relative;
-            overflow: hidden;
+            background: white;
+            padding: 25px 15px;
+            border-radius: 24px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            transition: 0.4s;
+            border: 2px solid transparent;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
         }
 
-        .seat-pod:hover { transform: scale(1.03); }
-
-        .seat-pod.active-occupied { border-color: var(--occupied); }
-        .seat-pod.active-free { border-color: var(--available); }
-
-        .icon-box {
-            font-size: 2.2rem;
+        /* 状态图标动画 */
+        .icon-wrapper {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.5rem;
             margin-bottom: 12px;
-            filter: drop-shadow(0 4px 8px rgba(0,0,0,0.1));
+            transition: 0.3s;
         }
 
-        .status-tag {
-            font-size: 1rem;
-            font-weight: 800;
-            margin-bottom: 5px;
+        /* 空闲状态 - 呼吸灯效果 */
+        .status-free { 
+            background: rgba(0, 184, 148, 0.1); 
+            color: var(--available); 
+            animation: pulse-green 2s infinite;
+        }
+        .status-busy { background: rgba(214, 48, 49, 0.1); color: var(--occupied); }
+
+        @keyframes pulse-green {
+            0% { box-shadow: 0 0 0 0px rgba(0, 184, 148, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(0, 184, 148, 0); }
+            100% { box-shadow: 0 0 0 0px rgba(0, 184, 148, 0); }
         }
 
-        .pod-id { font-size: 0.7rem; color: #bbb; font-family: monospace; }
+        .seat-label { font-weight: 600; font-size: 1rem; margin-bottom: 4px; }
+        .seat-id { font-size: 0.75rem; color: #b2bec3; }
 
-        /* 呼吸光晕 */
-        .glow {
-            position: absolute;
-            top: -50%; left: -50%; width: 200%; height: 200%;
-            background: radial-gradient(circle, rgba(255,255,255,0.8) 0%, transparent 70%);
-            opacity: 0.1;
-            pointer-events: none;
-        }
-
+        /* 页脚 */
         .footer {
-            margin-top: 35px;
-            padding-top: 20px;
-            border-top: 1px dashed rgba(0,0,0,0.1);
+            margin-top: 30px;
+            text-align: center;
+            font-size: 0.75rem;
+            color: #636e72;
         }
-
-        .clock-chip {
-            background: var(--fzu-red);
-            color: white;
-            padding: 6px 20px;
-            border-radius: 50px;
-            font-family: 'Courier New', monospace;
-            font-weight: bold;
-            font-size: 1.1rem;
+        .refresh-tag {
             display: inline-block;
-            box-shadow: 0 4px 15px rgba(166, 25, 46, 0.3);
+            margin-top: 10px;
+            padding: 4px 12px;
+            background: rgba(0,0,0,0.05);
+            border-radius: 10px;
         }
 
-        .sync-text { font-size: 0.7rem; color: #999; margin-top: 10px; }
-
-        /* SVG 环形进度条动画 */
-        circle {
-            transition: stroke-dashoffset 1s ease-in-out;
-            transform: rotate(-90deg);
-            transform-origin: 50% 50%;
+        /* 加载动画 */
+        .loader {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 50px 0;
         }
     </style>
 </head>
@@ -182,101 +159,110 @@
 
     <div class="bg-layer"></div>
 
-    <div class="main-card">
-        <div class="header">
-            <h1>福大铜盘自习室</h1>
-            <div class="sub-info">Smart Campus · Seats Monitoring</div>
-        </div>
-
-        <div class="usage-section">
-            <div class="chart-container">
-                <svg width="80" height="80">
-                    <circle cx="40" cy="40" r="35" fill="transparent" stroke="#e0e0e0" stroke-width="6"></circle>
-                    <circle id="progressCircle" cx="40" cy="40" r="35" fill="transparent" stroke="#A6192E" stroke-width="6" 
-                            stroke-dasharray="219.9" stroke-dashoffset="219.9" stroke-linecap="round"></circle>
-                </svg>
-                <div class="chart-text" id="percentText">0%</div>
-            </div>
-            <div class="stats-text-box">
-                <div class="stat-line"><div class="dot" style="background:var(--available)"></div> 空闲位置：<span id="freeNum">0</span></div>
-                <div class="stat-line"><div class="dot" style="background:var(--occupied)"></div> 已占位置：<span id="busyNum">0</span></div>
-            </div>
-        </div>
-
-        <div class="grid" id="mainGrid">
+    <div class="app-container">
+        <div class="main-card">
+            <div class="header">
+                <h1>福州大学 · 智慧自习</h1>
+                <div class="subtitle">铜盘校区 - 实时位置监控</div>
             </div>
 
-        <div class="footer">
-            <div class="clock-chip" id="clock">00:00:00</div>
-            <div class="sync-text"><i class="fas fa-sync-alt fa-spin"></i> 智慧校园系统 · 每 30 秒自动同步数据</div>
+            <div class="stat-banner" id="statBanner" style="display: none;">
+                <div class="stat-item">
+                    <span class="stat-val" id="totalCount">4</span>
+                    <span class="stat-label">总座位</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-val" id="freeCount" style="color: var(--available);">0</span>
+                    <span class="stat-label">空闲</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-val" id="busyCount" style="color: var(--occupied);">0</span>
+                    <span class="stat-label">已占</span>
+                </div>
+            </div>
+
+            <div id="loader" class="loader">
+                <i class="fas fa-circle-notch fa-spin fa-2x" style="color: var(--fzu-red)"></i>
+                <p style="margin-top:15px; font-size:0.9rem;">正在同步云端数据...</p>
+            </div>
+
+            <div class="seats-grid" id="seatsGrid"></div>
+
+            <div class="footer">
+                <div id="updateTime">正在获取同步时间...</div>
+                <div class="refresh-tag">每 30s 自动更新数据</div>
+            </div>
         </div>
     </div>
 
     <script>
-        const API_URL = "https://iot-api.heclouds.com/thingmodel/query-device-property?product_id=2dy4m1jM59&device_name=chair";
-        const HEADERS = {
-            "Accept": "application/json, text/plain, */*",
-            "authorization": "version=2022-05-01&res=userid%2F493090&et=1772424477&method=sha1&sign=m2vZXZ7wIeABw14vtyg8bGVs9b8%3D"
+        const API_CONFIG = {
+            url: "https://iot-api.heclouds.com/thingmodel/query-device-property",
+            headers: {
+                "Accept": "application/json, text/plain, */*",
+                "authorization": "version=2022-05-01&res=userid%2F493090&et=1772424477&method=sha1&sign=m2vZXZ7wIeABw14vtyg8bGVs9b8%3D"
+            },
+            params: "?product_id=2dy4m1jM59&device_name=chair"
         };
 
-        async function updateData() {
+        async function updateStatus() {
             try {
-                const res = await fetch(API_URL, { headers: HEADERS });
-                const json = await res.json();
-                const seats = json.data.find(d => d.identifier === 'seats');
-                render(seats ? seats.value : "0000");
-            } catch (e) {
-                console.log("数据加载失败");
+                const response = await fetch(API_CONFIG.url + API_CONFIG.params, {
+                    headers: API_CONFIG.headers
+                });
+                const json = await response.json();
+                
+                // 找到 identifier 为 'seats' 的数据
+                const property = json.data.find(d => d.identifier === 'seats');
+                // 这里处理 '0001' 字符串，如果没有获取到则默认全空
+                const statusString = property ? property.value : "0000"; 
+                
+                render(statusString);
+            } catch (err) {
+                console.error("Fetch Error:", err);
+                document.getElementById('loader').innerHTML = "无法读取数据，请检查网络";
             }
         }
 
         function render(str) {
-            const grid = document.getElementById('mainGrid');
+            const grid = document.getElementById('seatsGrid');
+            const loader = document.getElementById('loader');
+            const stats = document.getElementById('statBanner');
+            
+            loader.style.display = 'none';
+            stats.style.display = 'flex';
             grid.innerHTML = '';
-            const arr = str.split('');
+
+            const statusArr = str.split('');
+            let free = 0;
             let busy = 0;
 
-            arr.forEach((s, i) => {
+            statusArr.forEach((s, i) => {
                 const isBusy = s === '1';
-                if(isBusy) busy++;
+                isBusy ? busy++ : free++;
                 
-                const pod = document.createElement('div');
-                pod.className = `seat-pod ${isBusy ? 'active-occupied' : 'active-free'}`;
-                pod.style.animationDelay = `${i * 0.1}s`;
-                
-                pod.innerHTML = `
-                    <div class="glow"></div>
-                    <div class="icon-box" style="color:${isBusy ? 'var(--occupied)' : 'var(--available)'}">
-                        <i class="fas ${isBusy ? 'fa-user-graduate' : 'fa-couch'}"></i>
+                const card = document.createElement('div');
+                card.className = 'seat-unit';
+                card.innerHTML = `
+                    <div class="icon-wrapper ${isBusy ? 'status-busy' : 'status-free'}">
+                        <i class="fas ${isBusy ? 'fa-user-tie' : 'fa-leaf'}"></i>
                     </div>
-                    <div class="status-tag" style="color:${isBusy ? 'var(--occupied)' : 'var(--available)'}">
-                        ${isBusy ? '已占用' : '空闲中'}
+                    <div class="seat-label" style="color:${isBusy ? 'var(--occupied)' : 'var(--available)'}">
+                        ${isBusy ? '有人' : '空闲'}
                     </div>
-                    <div class="pod-id">POSITION_B0${i+1}</div>
+                    <div class="seat-id">位置 ID: B${i+1}</div>
                 `;
-                grid.appendChild(pod);
+                grid.appendChild(card);
             });
 
-            // 更新图表和数字
-            const total = arr.length;
-            const percent = (busy / total) * 100;
-            document.getElementById('freeNum').innerText = total - busy;
-            document.getElementById('busyNum').innerText = busy;
-            document.getElementById('percentText').innerText = Math.round(percent) + "%";
-            
-            // 环形动画计算: 周长 = 2 * π * r = 2 * 3.14 * 35 ≈ 220
-            const offset = 220 - (220 * percent / 100);
-            document.getElementById('progressCircle').style.strokeDashoffset = offset;
+            document.getElementById('freeCount').innerText = free;
+            document.getElementById('busyCount').innerText = busy;
+            document.getElementById('updateTime').innerText = "最后更新: " + new Date().toLocaleTimeString();
         }
 
-        function runClock() {
-            const now = new Date();
-            document.getElementById('clock').innerText = now.toLocaleTimeString('zh-CN', {hour12: false});
-        }
-
-        updateData();
-        setInterval(updateData, 30000);
-        setInterval(runClock, 1000);
+        // 立即执行并开启循环
+        updateStatus();
+        setInterval(updateStatus, 30000);
     </script>
 </body>
 </html>
