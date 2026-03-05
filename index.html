@@ -3,131 +3,155 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>福大铜盘自习室 - 座位实时监控</title>
+    <title>福大铜盘自习室 - 智慧监控</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
-            --fzu-red: #8b0012; /* 福大红近似色 */
-            --glass-bg: rgba(255, 255, 255, 0.8);
-            --success: #27ae60;
-            --danger: #e74c3c;
+            --fzu-red: #A6192E; /* 官方标准福大红 */
+            --fzu-gold: #C6A300;
+            --bg-blur: rgba(255, 255, 255, 0.75);
+            --available: #00b894;
+            --occupied: #d63031;
+            --text-main: #2d3436;
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; }
 
         body, html {
             height: 100%;
-            font-family: "PingFang SC", "Helvetica Neue", "Microsoft YaHei", sans-serif;
-            overflow: hidden;
+            font-family: 'SF Pro Display', 'PingFang SC', sans-serif;
+            background-color: #f0f2f5;
         }
 
-        /* 响应式背景图 */
+        /* 响应式自适应背景 */
         .bg-layer {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
             z-index: -1;
             background-size: cover;
             background-position: center;
-            filter: brightness(0.8);
-            transition: background-image 0.8s ease-in-out;
+            transition: 1s ease;
         }
+        /* 这里的 URL 请确保在你的 GitHub 仓库中有对应文件 */
+        @media (min-width: 769px) { .bg-layer { background-image: linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.3)), url('bg-pc.jpg'); } }
+        @media (max-width: 768px) { .bg-layer { background-image: linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.4)), url('bg-mobile.jpg'); } }
 
-        @media (min-width: 769px) { .bg-layer { background-image: url('bg-pc.jpg'); } }
-        @media (max-width: 768px) { .bg-layer { background-image: url('bg-mobile.jpg'); } }
-
-        /* 主容器 */
-        .main-container {
+        .app-container {
             display: flex;
-            flex-direction: column;
-            align-items: center;
             justify-content: center;
-            height: 100%;
+            align-items: center;
+            min-height: 100vh;
             padding: 20px;
         }
 
-        .glass-card {
-            background: var(--glass-bg);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            border-radius: 24px;
+        .main-card {
             width: 100%;
-            max-width: 450px;
+            max-width: 480px;
+            background: var(--bg-blur);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 32px;
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
             padding: 30px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
-            text-align: center;
+            overflow: hidden;
         }
 
-        .header h1 {
-            color: var(--fzu-red);
-            font-size: 1.5rem;
-            margin-bottom: 5px;
+        /* 顶部标题栏 */
+        .header { text-align: center; margin-bottom: 25px; }
+        .header img { width: 50px; margin-bottom: 10px; } /* 如果你有校徽可以加在这里 */
+        .header h1 { 
+            font-size: 1.6rem; 
+            color: var(--fzu-red); 
+            font-weight: 800;
             letter-spacing: 1px;
         }
+        .header .subtitle { font-size: 0.85rem; color: #636e72; margin-top: 4px; }
 
-        .header p {
-            font-size: 0.9rem;
-            color: #555;
+        /* 统计数字 */
+        .stat-banner {
+            display: flex;
+            justify-content: space-around;
+            background: rgba(255, 255, 255, 0.5);
+            padding: 15px;
+            border-radius: 20px;
             margin-bottom: 25px;
         }
+        .stat-item { text-align: center; }
+        .stat-val { display: block; font-size: 1.2rem; font-weight: bold; color: var(--text-main); }
+        .stat-label { font-size: 0.7rem; color: #888; text-transform: uppercase; }
 
-        /* 座位布局网格 */
-        .seats-container {
+        /* 座位区域布局 */
+        .seats-grid {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
             gap: 20px;
-            margin-top: 10px;
         }
 
-        .seat-box {
+        .seat-unit {
+            position: relative;
             background: white;
-            border-radius: 18px;
-            padding: 20px;
+            padding: 25px 15px;
+            border-radius: 24px;
             display: flex;
             flex-direction: column;
             align-items: center;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.3s;
+            transition: 0.4s;
+            border: 2px solid transparent;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
         }
 
-        .seat-box:hover { transform: translateY(-5px); }
-
-        .seat-icon {
-            font-size: 2.2rem;
-            margin-bottom: 10px;
+        /* 状态图标动画 */
+        .icon-wrapper {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.5rem;
+            margin-bottom: 12px;
+            transition: 0.3s;
         }
 
-        .seat-num { font-size: 0.8rem; color: #888; margin-top: 5px; }
+        /* 空闲状态 - 呼吸灯效果 */
+        .status-free { 
+            background: rgba(0, 184, 148, 0.1); 
+            color: var(--available); 
+            animation: pulse-green 2s infinite;
+        }
+        .status-busy { background: rgba(214, 48, 49, 0.1); color: var(--occupied); }
 
-        /* 状态颜色定义 */
-        .status-0 { color: var(--success); } /* 空闲 */
-        .status-1 { color: var(--danger); }  /* 有人 */
-
-        .status-text {
-            font-weight: bold;
-            font-size: 1rem;
+        @keyframes pulse-green {
+            0% { box-shadow: 0 0 0 0px rgba(0, 184, 148, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(0, 184, 148, 0); }
+            100% { box-shadow: 0 0 0 0px rgba(0, 184, 148, 0); }
         }
 
-        /* 加载与更新提示 */
-        #loading { padding: 40px; color: #666; font-style: italic; }
-        .footer-info {
-            margin-top: 25px;
+        .seat-label { font-weight: 600; font-size: 1rem; margin-bottom: 4px; }
+        .seat-id { font-size: 0.75rem; color: #b2bec3; }
+
+        /* 页脚 */
+        .footer {
+            margin-top: 30px;
+            text-align: center;
             font-size: 0.75rem;
-            color: #777;
-            border-top: 1px solid rgba(0,0,0,0.05);
-            padding-top: 15px;
+            color: #636e72;
+        }
+        .refresh-tag {
+            display: inline-block;
+            margin-top: 10px;
+            padding: 4px 12px;
+            background: rgba(0,0,0,0.05);
+            border-radius: 10px;
         }
 
-        .refresh-btn {
-            background: var(--fzu-red);
-            color: white;
-            border: none;
-            padding: 8px 15px;
-            border-radius: 20px;
-            font-size: 0.8rem;
-            cursor: pointer;
-            margin-top: 10px;
-            opacity: 0.9;
+        /* 加载动画 */
+        .loader {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 50px 0;
         }
     </style>
 </head>
@@ -135,85 +159,110 @@
 
     <div class="bg-layer"></div>
 
-    <div class="main-container">
-        <div class="glass-card">
+    <div class="app-container">
+        <div class="main-card">
             <div class="header">
-                <h1>福州大学铜盘自习室</h1>
-                <p>实时座位监控系统 · 智慧校园</p>
+                <h1>福州大学 · 智慧自习</h1>
+                <div class="subtitle">铜盘校区 - 实时位置监控</div>
             </div>
 
-            <div id="loading"><i class="fas fa-spinner fa-spin"></i> 正在连接云端数据...</div>
-
-            <div class="seats-container" id="seatsGrid">
+            <div class="stat-banner" id="statBanner" style="display: none;">
+                <div class="stat-item">
+                    <span class="stat-val" id="totalCount">4</span>
+                    <span class="stat-label">总座位</span>
                 </div>
+                <div class="stat-item">
+                    <span class="stat-val" id="freeCount" style="color: var(--available);">0</span>
+                    <span class="stat-label">空闲</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-val" id="busyCount" style="color: var(--occupied);">0</span>
+                    <span class="stat-label">已占</span>
+                </div>
+            </div>
 
-            <div class="footer-info">
-                <div id="updateTime">等待同步...</div>
-                <button class="refresh-btn" onclick="fetchSeatData()">立即刷新</button>
+            <div id="loader" class="loader">
+                <i class="fas fa-circle-notch fa-spin fa-2x" style="color: var(--fzu-red)"></i>
+                <p style="margin-top:15px; font-size:0.9rem;">正在同步云端数据...</p>
+            </div>
+
+            <div class="seats-grid" id="seatsGrid"></div>
+
+            <div class="footer">
+                <div id="updateTime">正在获取同步时间...</div>
+                <div class="refresh-tag">每 30s 自动更新数据</div>
             </div>
         </div>
     </div>
 
     <script>
-        const config = {
+        const API_CONFIG = {
             url: "https://iot-api.heclouds.com/thingmodel/query-device-property",
-            header: {
+            headers: {
                 "Accept": "application/json, text/plain, */*",
                 "authorization": "version=2018-10-31&res=products%2F2dy4m1jM59%2Fdevices%2Fchair&et=1917057674&method=sha1&sign=eOdd%2FXeMrfelGqFDeqA8xXs2Sh4%3D"
             },
-            params: "product_id=2dy4m1jM59&device_name=chair"
+            params: "?product_id=2dy4m1jM59&device_name=chair"
         };
 
-        async function fetchSeatData() {
+        async function updateStatus() {
             try {
-                const response = await fetch(`${config.url}?${config.params}`, {
-                    headers: config.header
+                const response = await fetch(API_CONFIG.url + API_CONFIG.params, {
+                    headers: API_CONFIG.headers
                 });
-                const res = await response.json();
+                const json = await response.json();
                 
-                // OneNET 数据路径：data[0].value (假设 identifier 为 seats)
-                const seatData = res.data.find(item => item.identifier === 'seats');
-                const statusStr = seatData ? seatData.value : "0000"; // 默认全空以防解析失败
+                // 找到 identifier 为 'seats' 的数据
+                const property = json.data.find(d => d.identifier === 'seats');
+                // 这里处理 '0001' 字符串，如果没有获取到则默认全空
+                const statusString = property ? property.value : "0000"; 
                 
-                renderSeats(statusStr);
+                render(statusString);
             } catch (err) {
-                console.error(err);
-                document.getElementById('loading').innerHTML = "⚠️ 无法连接云平台";
+                console.error("Fetch Error:", err);
+                document.getElementById('loader').innerHTML = "无法读取数据，请检查网络";
             }
         }
 
-        function renderSeats(status) {
+        function render(str) {
             const grid = document.getElementById('seatsGrid');
-            const loading = document.getElementById('loading');
-            loading.style.display = 'none';
+            const loader = document.getElementById('loader');
+            const stats = document.getElementById('statBanner');
+            
+            loader.style.display = 'none';
+            stats.style.display = 'flex';
             grid.innerHTML = '';
 
-            const statusArr = status.split(''); // ['0','0','0','1']
+            const statusArr = str.split('');
+            let free = 0;
+            let busy = 0;
 
-            statusArr.forEach((s, index) => {
-                const isOccupied = s === '1';
-                const seatDiv = document.createElement('div');
-                seatDiv.className = 'seat-box';
+            statusArr.forEach((s, i) => {
+                const isBusy = s === '1';
+                isBusy ? busy++ : free++;
                 
-                seatDiv.innerHTML = `
-                    <div class="seat-icon ${isOccupied ? 'status-1' : 'status-0'}">
-                        <i class="fas ${isOccupied ? 'fa-user-clock' : 'fa-check-circle'}"></i>
+                const card = document.createElement('div');
+                card.className = 'seat-unit';
+                card.innerHTML = `
+                    <div class="icon-wrapper ${isBusy ? 'status-busy' : 'status-free'}">
+                        <i class="fas ${isBusy ? 'fa-user-tie' : 'fa-leaf'}"></i>
                     </div>
-                    <div class="status-text ${isOccupied ? 'status-1' : 'status-0'}">
-                        ${isOccupied ? '有人' : '空闲'}
+                    <div class="seat-label" style="color:${isBusy ? 'var(--occupied)' : 'var(--available)'}">
+                        ${isBusy ? '有人' : '空闲'}
                     </div>
-                    <div class="seat-num">位置 #0${index + 1}</div>
+                    <div class="seat-id">位置 ID: B${i+1}</div>
                 `;
-                grid.appendChild(seatDiv);
+                grid.appendChild(card);
             });
 
-            document.getElementById('updateTime').innerText = "数据同步时间: " + new Date().toLocaleString();
+            document.getElementById('freeCount').innerText = free;
+            document.getElementById('busyCount').innerText = busy;
+            document.getElementById('updateTime').innerText = "最后更新: " + new Date().toLocaleTimeString();
         }
 
-        // 初始化
-        fetchSeatData();
-        // 自动刷新（每 1 分钟）
-        setInterval(fetchSeatData, 60000);
+        // 立即执行并开启循环
+        updateStatus();
+        setInterval(updateStatus, 30000);
     </script>
 </body>
 </html>
