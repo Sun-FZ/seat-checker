@@ -280,7 +280,6 @@
     </div>
 
     <script>
-        // 【修改点 1】：严格按照你提供的请求日志更新了 authorization 和参数
         const API_CONFIG = {
             url: "https://iot-api.heclouds.com/thingmodel/query-device-property",
             headers: {
@@ -291,7 +290,10 @@
         };
 
         let currentActiveArea = null; 
-        let allAreasData = {
+        
+        // 【中策修改点1】：初始化时，优先尝试从浏览器本地缓存读取历史状态，如果没有再默认全0
+        let savedData = localStorage.getItem('fzu_seats_history');
+        let allAreasData = savedData ? JSON.parse(savedData) : {
             'A': '0000',
             'B': '0000',
             'C': '0000',
@@ -314,7 +316,6 @@
             document.getElementById('bgLayer').className = 'bg-layer bg-home';
         }
 
-        // 【修改点 2】：针对请求逻辑和返回结果解析进行了修正
         async function fetchDeviceData() {
             try {
                 const response = await fetch(API_CONFIG.url + API_CONFIG.params, {
@@ -323,7 +324,6 @@
                 });
                 const json = await response.json();
                 
-                // 检查云平台返回的 code 是否为 0 (成功)
                 if (json.code === 0 && json.data) {
                     const property = json.data.find(d => d.identifier === 'kejijie');
                     
@@ -336,6 +336,8 @@
                             
                             if (allAreasData[areaCode] !== undefined) {
                                 allAreasData[areaCode] = seatStatus;
+                                // 【中策修改点2】：每次拿到新数据更新后，立刻存入浏览器本地缓存
+                                localStorage.setItem('fzu_seats_history', JSON.stringify(allAreasData));
                             }
 
                             if (currentActiveArea === areaCode) {
@@ -345,7 +347,6 @@
                     }
                     document.getElementById('globalSyncStatus').innerHTML = `<i class="fas fa-check-circle" style="color:var(--available)"></i> 数据已同步 (${new Date().toLocaleTimeString()})`;
                 } else {
-                    // 如果 code 不是 0，抛出错误让 catch 捕获
                     throw new Error(json.msg || "云平台接口返回异常");
                 }
                 
