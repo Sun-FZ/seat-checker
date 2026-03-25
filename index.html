@@ -280,16 +280,16 @@
     </div>
 
     <script>
+        // 【修改点 1】：严格按照你提供的请求日志更新了 authorization 和参数
         const API_CONFIG = {
             url: "https://iot-api.heclouds.com/thingmodel/query-device-property",
             headers: {
                 "Accept": "application/json, text/plain, */*",
-                "authorization": "version=2018-10-31&res=products%2FyAFbd1qBGM%2Fdevices%2Fchair2&et=2073965140&method=sha1&sign=lOBITiK7Psgsq2bzEHydhrREJ6c%3D"
+                "authorization": "version=2022-05-01&res=userid%2F493090&et=1774444657&method=sha1&sign=UJw5KqScYBUaTFizgC07GQ8pASI%3D"
             },
             params: "?product_id=yAFbd1qBGM&device_name=chair2"
         };
 
-        // 全局状态：记录当前正在查看的区域，以及4个区域的最新座位状态
         let currentActiveArea = null; 
         let allAreasData = {
             'A': '0000',
@@ -298,75 +298,63 @@
             'D': '0000'
         };
 
-        // 视图切换：打开具体区域
         function openArea(areaCode) {
             currentActiveArea = areaCode;
-            
-            // 切换 UI 显示
             document.getElementById('homeView').classList.remove('active');
             document.getElementById('detailView').classList.add('active');
-            
-            // 切换背景图片为详情页背景
             document.getElementById('bgLayer').className = 'bg-layer bg-detail';
-            
-            // 更新标题
             document.getElementById('areaSubtitle').innerText = `铜盘校区 - ${areaCode} 区监控中`;
-            
-            // 立即渲染该区域当前已知的数据
             renderSeats(allAreasData[areaCode], areaCode);
         }
 
-        // 视图切换：返回主页
         function goHome() {
             currentActiveArea = null;
-            
-            // 切换 UI 显示
             document.getElementById('detailView').classList.remove('active');
             document.getElementById('homeView').classList.add('active');
-            
-            // 切换背景图片为主页背景
             document.getElementById('bgLayer').className = 'bg-layer bg-home';
         }
 
-        // 核心数据获取逻辑
+        // 【修改点 2】：针对请求逻辑和返回结果解析进行了修正
         async function fetchDeviceData() {
             try {
                 const response = await fetch(API_CONFIG.url + API_CONFIG.params, {
+                    method: 'GET',
                     headers: API_CONFIG.headers
                 });
                 const json = await response.json();
                 
-                // 【核心修改点：这里将 'seats' 改成了 'kejijie'】
-                const property = json.data.find(d => d.identifier === 'kejijie');
-                
-                if (property && property.value) {
-                    const rawValue = property.value; // 预期格式: "A1010", "B0000" 等
+                // 检查云平台返回的 code 是否为 0 (成功)
+                if (json.code === 0 && json.data) {
+                    const property = json.data.find(d => d.identifier === 'kejijie');
                     
-                    if(rawValue.length >= 5) {
-                        const areaCode = rawValue.charAt(0); // 提取第一个字符 (A, B, C, D)
-                        const seatStatus = rawValue.substring(1, 5); // 提取后面四个字符
+                    if (property && property.value) {
+                        const rawValue = property.value; 
                         
-                        // 更新全局数据对象中对应区域的状态
-                        if (allAreasData[areaCode] !== undefined) {
-                            allAreasData[areaCode] = seatStatus;
-                        }
+                        if(rawValue.length >= 5) {
+                            const areaCode = rawValue.charAt(0); 
+                            const seatStatus = rawValue.substring(1, 5); 
+                            
+                            if (allAreasData[areaCode] !== undefined) {
+                                allAreasData[areaCode] = seatStatus;
+                            }
 
-                        // 如果用户当前正在查看这个区域，立刻刷新屏幕
-                        if (currentActiveArea === areaCode) {
-                            renderSeats(seatStatus, areaCode);
+                            if (currentActiveArea === areaCode) {
+                                renderSeats(seatStatus, areaCode);
+                            }
                         }
                     }
+                    document.getElementById('globalSyncStatus').innerHTML = `<i class="fas fa-check-circle" style="color:var(--available)"></i> 数据已同步 (${new Date().toLocaleTimeString()})`;
+                } else {
+                    // 如果 code 不是 0，抛出错误让 catch 捕获
+                    throw new Error(json.msg || "云平台接口返回异常");
                 }
-                
-                document.getElementById('globalSyncStatus').innerHTML = `<i class="fas fa-check-circle" style="color:var(--available)"></i> 数据已同步 (${new Date().toLocaleTimeString()})`;
                 
             } catch (err) {
                 console.error("Fetch Error:", err);
-                document.getElementById('globalSyncStatus').innerHTML = `<i class="fas fa-exclamation-triangle" style="color:var(--occupied)"></i> 网络断开，重试中...`;
+                document.getElementById('globalSyncStatus').innerHTML = `<i class="fas fa-exclamation-triangle" style="color:var(--occupied)"></i> 同步失败，正在重试...`;
             }
         }
 
-        // 渲染具体座位的 UI
         function renderSeats(statusString, areaCode) {
             const grid = document.getElementById('seatsGrid');
             const loader = document.getElementById('loader');
@@ -403,10 +391,8 @@
             document.getElementById('updateTime').innerText = "页面最后刷新: " + new Date().toLocaleTimeString();
         }
 
-        // 初始化：先拉取一次数据，然后设置定时器轮询
         fetchDeviceData();
         setInterval(fetchDeviceData, 10000); 
-
     </script>
 </body>
 </html>
