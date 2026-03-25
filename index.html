@@ -104,6 +104,23 @@
         }
         .back-btn:hover { transform: scale(1.1); }
 
+        /* --------- 推荐区域横幅 (新增) --------- */
+        .recommend-banner {
+            margin-top: 15px;
+            padding: 8px 15px;
+            background: rgba(0, 184, 148, 0.1);
+            color: var(--available);
+            border-radius: 12px;
+            font-size: 0.9rem;
+            font-weight: bold;
+            display: inline-block;
+            transition: 0.3s;
+        }
+        .recommend-banner.busy {
+            background: rgba(214, 48, 49, 0.1);
+            color: var(--occupied);
+        }
+
         /* ---------------- 主页样式 ---------------- */
         .area-grid {
             display: grid;
@@ -213,6 +230,9 @@
                 <div class="header">
                     <h1>福州大学 · 智慧自习</h1>
                     <div class="subtitle">铜盘校区 - 请选择要查看的区域</div>
+                    <div id="recommendBanner" class="recommend-banner">
+                        <i class="fas fa-spinner fa-spin"></i> 正在分析座位情况...
+                    </div>
                 </div>
                 
                 <div class="area-grid">
@@ -291,7 +311,6 @@
 
         let currentActiveArea = null; 
         
-        // 【中策修改点1】：初始化时，优先尝试从浏览器本地缓存读取历史状态，如果没有再默认全0
         let savedData = localStorage.getItem('fzu_seats_history');
         let allAreasData = savedData ? JSON.parse(savedData) : {
             'A': '0000',
@@ -299,6 +318,42 @@
             'C': '0000',
             'D': '0000'
         };
+
+        // --- 新增：分析并更新推荐区域的函数 ---
+        function updateRecommendation() {
+            let maxFree = -1;
+            let bestArea = '';
+            // 严格按照 A B C D 的顺序遍历，遇到相同时保留先遍历到的（满足按ABCD顺序显示一个的需求）
+            const areas = ['A', 'B', 'C', 'D']; 
+
+            for (let i = 0; i < areas.length; i++) {
+                const area = areas[i];
+                const statusStr = allAreasData[area];
+                let freeCount = 0;
+                
+                // 统计该区域有多少个 '0' (空闲)
+                for (let j = 0; j < statusStr.length; j++) {
+                    if (statusStr[j] === '0') {
+                        freeCount++;
+                    }
+                }
+
+                // 如果找到更多的空座，则更新最大值和最佳区域
+                if (freeCount > maxFree) {
+                    maxFree = freeCount;
+                    bestArea = area;
+                }
+            }
+
+            const banner = document.getElementById('recommendBanner');
+            if (maxFree > 0) {
+                banner.className = 'recommend-banner';
+                banner.innerHTML = `<i class="fas fa-star"></i> 推荐区域: ${bestArea} 区 (空位: ${maxFree})`;
+            } else {
+                banner.className = 'recommend-banner busy';
+                banner.innerHTML = `<i class="fas fa-exclamation-circle"></i> 目前所有区域座位紧张`;
+            }
+        }
 
         function openArea(areaCode) {
             currentActiveArea = areaCode;
@@ -336,8 +391,10 @@
                             
                             if (allAreasData[areaCode] !== undefined) {
                                 allAreasData[areaCode] = seatStatus;
-                                // 【中策修改点2】：每次拿到新数据更新后，立刻存入浏览器本地缓存
                                 localStorage.setItem('fzu_seats_history', JSON.stringify(allAreasData));
+                                
+                                // --- 新增：每次收到新数据并更新记忆库后，重新计算推荐区域 ---
+                                updateRecommendation();
                             }
 
                             if (currentActiveArea === areaCode) {
@@ -392,6 +449,9 @@
             document.getElementById('updateTime').innerText = "页面最后刷新: " + new Date().toLocaleTimeString();
         }
 
+        // 初始化：先分析一次历史缓存数据，显示出推荐
+        updateRecommendation();
+        
         fetchDeviceData();
         setInterval(fetchDeviceData, 10000); 
     </script>
