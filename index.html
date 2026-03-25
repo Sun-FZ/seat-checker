@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
-            --fzu-red: #A6192E; /* 官方标准福大红 */
+            --fzu-red: #A6192E;
             --fzu-gold: #C6A300;
             --bg-blur: rgba(255, 255, 255, 0.75);
             --available: #00b894;
@@ -17,37 +17,40 @@
 
         * { box-sizing: border-box; margin: 0; padding: 0; }
 
-        /* 修复关键：移除 body 的背景色，确保背景层可见 */
         body, html {
             height: 100%;
             font-family: 'SF Pro Display', 'PingFang SC', sans-serif;
-            background: none; /* 确保 body 透明以显示背景层 */
+            background: none;
         }
 
-        /* 响应式自适应背景 */
+        /* 响应式自适应背景 - 通过类名区分主页和详情页 */
         .bg-layer {
             position: fixed;
             top: 0; 
             left: 0; 
             width: 100%; 
             height: 100%;
-            z-index: -1; /* 位于最底层 */
+            z-index: -1;
             background-size: cover;
             background-position: center;
             background-repeat: no-repeat;
-            transition: 1s ease;
+            transition: background-image 0.5s ease; /* 添加渐变过渡效果 */
         }
 
-        /* 这里的 URL 请确保在你的 GitHub 仓库中有对应文件，注意大小写必须一致 */
+        /* --- 详情页背景 --- */
         @media (min-width: 769px) { 
-            .bg-layer { 
-                background-image: linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.3)), url('bg-pc.jpg'); 
-            } 
+            .bg-layer.bg-detail { background-image: linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.3)), url('bg-pc.jpg'); } 
         }
         @media (max-width: 768px) { 
-            .bg-layer { 
-                background-image: linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.4)), url('bg-mobile.jpg'); 
-            } 
+            .bg-layer.bg-detail { background-image: linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.4)), url('bg-mobile.jpg'); } 
+        }
+
+        /* --- 主页背景 --- */
+        @media (min-width: 769px) { 
+            .bg-layer.bg-home { background-image: linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.3)), url('bg-home-pc.jpg'); } 
+        }
+        @media (max-width: 768px) { 
+            .bg-layer.bg-home { background-image: linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.4)), url('bg-home-mobile.jpg'); } 
         }
 
         .app-container {
@@ -69,19 +72,76 @@
             box-shadow: 0 20px 40px rgba(0,0,0,0.2);
             padding: 30px;
             overflow: hidden;
+            position: relative;
+        }
+
+        /* 视图切换类 */
+        .view-section { display: none; flex-direction: column; }
+        .view-section.active { display: flex; animation: fadeIn 0.4s ease; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
         /* 顶部标题栏 */
-        .header { text-align: center; margin-bottom: 25px; }
-        .header h1 { 
-            font-size: 1.6rem; 
-            color: var(--fzu-red); 
-            font-weight: 800;
-            letter-spacing: 1px;
-        }
+        .header { text-align: center; margin-bottom: 25px; position: relative; }
+        .header h1 { font-size: 1.6rem; color: var(--fzu-red); font-weight: 800; letter-spacing: 1px; }
         .header .subtitle { font-size: 0.85rem; color: #636e72; margin-top: 4px; }
 
-        /* 统计数字 */
+        /* 返回按钮 */
+        .back-btn {
+            position: absolute;
+            left: 0;
+            top: 5px;
+            background: none;
+            border: none;
+            color: var(--fzu-red);
+            font-size: 1.2rem;
+            cursor: pointer;
+            padding: 5px;
+            transition: 0.2s;
+        }
+        .back-btn:hover { transform: scale(1.1); }
+
+        /* ---------------- 主页样式 ---------------- */
+        .area-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+            margin-top: 10px;
+        }
+
+        .area-card {
+            background: white;
+            padding: 30px 15px;
+            border-radius: 24px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            border: 2px solid transparent;
+        }
+
+        .area-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(166, 25, 46, 0.15);
+            border-color: rgba(166, 25, 46, 0.3);
+        }
+
+        .area-icon {
+            font-size: 2.5rem;
+            color: var(--fzu-red);
+            margin-bottom: 10px;
+        }
+
+        .area-name {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: var(--text-main);
+        }
+
+        /* ---------------- 详情页样式 ---------------- */
         .stat-banner {
             display: flex;
             justify-content: space-around;
@@ -94,12 +154,7 @@
         .stat-val { display: block; font-size: 1.2rem; font-weight: bold; color: var(--text-main); }
         .stat-label { font-size: 0.7rem; color: #888; text-transform: uppercase; }
 
-        /* 座位区域布局 */
-        .seats-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 20px;
-        }
+        .seats-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
 
         .seat-unit {
             position: relative;
@@ -110,11 +165,9 @@
             flex-direction: column;
             align-items: center;
             transition: 0.4s;
-            border: 2px solid transparent;
             box-shadow: 0 4px 12px rgba(0,0,0,0.05);
         }
 
-        /* 状态图标动画 */
         .icon-wrapper {
             width: 50px;
             height: 50px;
@@ -127,7 +180,6 @@
             transition: 0.3s;
         }
 
-        /* 空闲状态 - 呼吸灯效果 */
         .status-free { 
             background: rgba(0, 184, 148, 0.1); 
             color: var(--available); 
@@ -144,67 +196,86 @@
         .seat-label { font-weight: 600; font-size: 1rem; margin-bottom: 4px; }
         .seat-id { font-size: 0.75rem; color: #b2bec3; }
 
-        /* 页脚 */
-        .footer {
-            margin-top: 30px;
-            text-align: center;
-            font-size: 0.75rem;
-            color: #636e72;
-        }
-        .refresh-tag {
-            display: inline-block;
-            margin-top: 10px;
-            padding: 4px 12px;
-            background: rgba(0,0,0,0.05);
-            border-radius: 10px;
-        }
-
-        /* 加载动画 */
-        .loader {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding: 50px 0;
-        }
+        .footer { margin-top: 30px; text-align: center; font-size: 0.75rem; color: #636e72; }
+        .refresh-tag { display: inline-block; margin-top: 10px; padding: 4px 12px; background: rgba(0,0,0,0.05); border-radius: 10px; }
+        
+        .loader { display: flex; flex-direction: column; align-items: center; padding: 50px 0; }
     </style>
 </head>
 <body>
 
-    <div class="bg-layer"></div>
+    <div id="bgLayer" class="bg-layer bg-home"></div>
 
     <div class="app-container">
         <div class="main-card">
-            <div class="header">
-                <h1>福州大学 · 智慧自习</h1>
-                <div class="subtitle">铜盘校区 - 实时位置监控</div>
-            </div>
-
-            <div class="stat-banner" id="statBanner" style="display: none;">
-                <div class="stat-item">
-                    <span class="stat-val" id="totalCount">4</span>
-                    <span class="stat-label">总座位</span>
+            
+            <div id="homeView" class="view-section active">
+                <div class="header">
+                    <h1>福州大学 · 智慧自习</h1>
+                    <div class="subtitle">铜盘校区 - 请选择要查看的区域</div>
                 </div>
-                <div class="stat-item">
-                    <span class="stat-val" id="freeCount" style="color: var(--available);">0</span>
-                    <span class="stat-label">空闲</span>
+                
+                <div class="area-grid">
+                    <div class="area-card" onclick="openArea('A')">
+                        <i class="fas fa-map-marker-alt area-icon"></i>
+                        <div class="area-name">A 区</div>
+                    </div>
+                    <div class="area-card" onclick="openArea('B')">
+                        <i class="fas fa-map-marker-alt area-icon"></i>
+                        <div class="area-name">B 区</div>
+                    </div>
+                    <div class="area-card" onclick="openArea('C')">
+                        <i class="fas fa-map-marker-alt area-icon"></i>
+                        <div class="area-name">C 区</div>
+                    </div>
+                    <div class="area-card" onclick="openArea('D')">
+                        <i class="fas fa-map-marker-alt area-icon"></i>
+                        <div class="area-name">D 区</div>
+                    </div>
                 </div>
-                <div class="stat-item">
-                    <span class="stat-val" id="busyCount" style="color: var(--occupied);">0</span>
-                    <span class="stat-label">已占</span>
+                
+                <div id="globalSyncStatus" class="footer" style="margin-top: 20px;">
+                    <i class="fas fa-sync fa-spin"></i> 正在后台同步云端数据...
                 </div>
             </div>
 
-            <div id="loader" class="loader">
-                <i class="fas fa-circle-notch fa-spin fa-2x" style="color: var(--fzu-red)"></i>
-                <p style="margin-top:15px; font-size:0.9rem;">正在同步云端数据...</p>
+            <div id="detailView" class="view-section">
+                <div class="header">
+                    <button class="back-btn" onclick="goHome()" title="返回主页">
+                        <i class="fas fa-chevron-left"></i>
+                    </button>
+                    <h1>福州大学 · 智慧自习</h1>
+                    <div class="subtitle" id="areaSubtitle">当前区域 - 实时位置监控</div>
+                </div>
+
+                <div class="stat-banner" id="statBanner" style="display: none;">
+                    <div class="stat-item">
+                        <span class="stat-val" id="totalCount">4</span>
+                        <span class="stat-label">总座位</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-val" id="freeCount" style="color: var(--available);">0</span>
+                        <span class="stat-label">空闲</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-val" id="busyCount" style="color: var(--occupied);">0</span>
+                        <span class="stat-label">已占</span>
+                    </div>
+                </div>
+
+                <div id="loader" class="loader">
+                    <i class="fas fa-circle-notch fa-spin fa-2x" style="color: var(--fzu-red)"></i>
+                    <p style="margin-top:15px; font-size:0.9rem;">正在解析区域数据...</p>
+                </div>
+
+                <div class="seats-grid" id="seatsGrid"></div>
+
+                <div class="footer">
+                    <div id="updateTime">正在获取同步时间...</div>
+                    <div class="refresh-tag">每 10s 自动更新数据</div>
+                </div>
             </div>
 
-            <div class="seats-grid" id="seatsGrid"></div>
-
-            <div class="footer">
-                <div id="updateTime">正在获取同步时间...</div>
-                <div class="refresh-tag">每 30s 自动更新数据</div>
-            </div>
         </div>
     </div>
 
@@ -213,29 +284,90 @@
             url: "https://iot-api.heclouds.com/thingmodel/query-device-property",
             headers: {
                 "Accept": "application/json, text/plain, */*",
-                "authorization": "version=2018-10-31&res=products%2F2dy4m1jM59%2Fdevices%2Fchair&et=1917057674&method=sha1&sign=eOdd%2FXeMrfelGqFDeqA8xXs2Sh4%3D"
+                "authorization": "version=2018-10-31&res=products%2FyAFbd1qBGM%2Fdevices%2Fchair2&et=2073965140&method=sha1&sign=lOBITiK7Psgsq2bzEHydhrREJ6c%3D"
             },
-            params: "?product_id=2dy4m1jM59&device_name=chair"
+            params: "?product_id=yAFbd1qBGM&device_name=chair2"
         };
 
-        async function updateStatus() {
+        // 全局状态：记录当前正在查看的区域，以及4个区域的最新座位状态
+        let currentActiveArea = null; 
+        let allAreasData = {
+            'A': '0000',
+            'B': '0000',
+            'C': '0000',
+            'D': '0000'
+        };
+
+        // 视图切换：打开具体区域
+        function openArea(areaCode) {
+            currentActiveArea = areaCode;
+            
+            // 切换 UI 显示
+            document.getElementById('homeView').classList.remove('active');
+            document.getElementById('detailView').classList.add('active');
+            
+            // 切换背景图片为详情页背景
+            document.getElementById('bgLayer').className = 'bg-layer bg-detail';
+            
+            // 更新标题
+            document.getElementById('areaSubtitle').innerText = `铜盘校区 - ${areaCode} 区监控中`;
+            
+            // 立即渲染该区域当前已知的数据
+            renderSeats(allAreasData[areaCode], areaCode);
+        }
+
+        // 视图切换：返回主页
+        function goHome() {
+            currentActiveArea = null;
+            
+            // 切换 UI 显示
+            document.getElementById('detailView').classList.remove('active');
+            document.getElementById('homeView').classList.add('active');
+            
+            // 切换背景图片为主页背景
+            document.getElementById('bgLayer').className = 'bg-layer bg-home';
+        }
+
+        // 核心数据获取逻辑
+        async function fetchDeviceData() {
             try {
                 const response = await fetch(API_CONFIG.url + API_CONFIG.params, {
                     headers: API_CONFIG.headers
                 });
                 const json = await response.json();
                 
-                const property = json.data.find(d => d.identifier === 'seats');
-                const statusString = property ? property.value : "0000"; 
+                // 【核心修改点：这里将 'seats' 改成了 'kejijie'】
+                const property = json.data.find(d => d.identifier === 'kejijie');
                 
-                render(statusString);
+                if (property && property.value) {
+                    const rawValue = property.value; // 预期格式: "A1010", "B0000" 等
+                    
+                    if(rawValue.length >= 5) {
+                        const areaCode = rawValue.charAt(0); // 提取第一个字符 (A, B, C, D)
+                        const seatStatus = rawValue.substring(1, 5); // 提取后面四个字符
+                        
+                        // 更新全局数据对象中对应区域的状态
+                        if (allAreasData[areaCode] !== undefined) {
+                            allAreasData[areaCode] = seatStatus;
+                        }
+
+                        // 如果用户当前正在查看这个区域，立刻刷新屏幕
+                        if (currentActiveArea === areaCode) {
+                            renderSeats(seatStatus, areaCode);
+                        }
+                    }
+                }
+                
+                document.getElementById('globalSyncStatus').innerHTML = `<i class="fas fa-check-circle" style="color:var(--available)"></i> 数据已同步 (${new Date().toLocaleTimeString()})`;
+                
             } catch (err) {
                 console.error("Fetch Error:", err);
-                document.getElementById('loader').innerHTML = "无法读取数据，请检查网络";
+                document.getElementById('globalSyncStatus').innerHTML = `<i class="fas fa-exclamation-triangle" style="color:var(--occupied)"></i> 网络断开，重试中...`;
             }
         }
 
-        function render(str) {
+        // 渲染具体座位的 UI
+        function renderSeats(statusString, areaCode) {
             const grid = document.getElementById('seatsGrid');
             const loader = document.getElementById('loader');
             const stats = document.getElementById('statBanner');
@@ -244,7 +376,7 @@
             stats.style.display = 'flex';
             grid.innerHTML = '';
 
-            const statusArr = str.split('');
+            const statusArr = statusString.split('');
             let free = 0;
             let busy = 0;
 
@@ -261,18 +393,20 @@
                     <div class="seat-label" style="color:${isBusy ? 'var(--occupied)' : 'var(--available)'}">
                         ${isBusy ? '有人' : '空闲'}
                     </div>
-                    <div class="seat-id">位置 ID: ${i+1}</div>
+                    <div class="seat-id">${areaCode}区 - 座位 ${i+1}</div>
                 `;
                 grid.appendChild(card);
             });
 
             document.getElementById('freeCount').innerText = free;
             document.getElementById('busyCount').innerText = busy;
-            document.getElementById('updateTime').innerText = "最后更新: " + new Date().toLocaleTimeString();
+            document.getElementById('updateTime').innerText = "页面最后刷新: " + new Date().toLocaleTimeString();
         }
 
-        updateStatus();
-        setInterval(updateStatus, 30000);
+        // 初始化：先拉取一次数据，然后设置定时器轮询
+        fetchDeviceData();
+        setInterval(fetchDeviceData, 10000); 
+
     </script>
 </body>
 </html>
